@@ -153,5 +153,37 @@ router.get('/history', auth, async (req, res) => {
     });
   }
 });
+router.post('/generate-image', auth, async (req, res) => {
 
+  try {
+
+    const { prompt } = req.body;
+
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/images/generations',
+      {
+        model: 'black-forest-labs/flux-1-schnell',
+        prompt: prompt
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    res.json({
+      image: response.data.data[0].url
+    });
+
+  } catch (err) {
+
+    console.error(err.response?.data || err.message);
+
+    res.status(500).json({
+      error: 'Image generation failed'
+    });
+  }
+});
 module.exports = router;
