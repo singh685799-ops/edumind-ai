@@ -57,7 +57,7 @@ async function callAI(messages, imageBase64 = null) {
   }
 
   const body = {
-    model: "openai/gpt-3.5-turbo",
+    model: "qwen/qwen-2.5-72b-instruct",
     messages: formattedMessages,
     max_tokens: 4096
   };
