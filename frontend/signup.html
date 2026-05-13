@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Account – EduMind AI</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="auth-container">
+  <div class="glass auth-box">
+    <div class="logo" style="margin-bottom:24px;">⚡ EduMind AI</div>
+    <h2>Create your account</h2>
+    <p class="subtitle">Start learning smarter in seconds.</p>
+    <div id="alert"></div>
+    <form id="signupForm">
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="name" required>
+      </div>
+      <div class="input-group">
+        <label>Email Address</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+    </form>
+    <p class="auth-link">Already have an account? <a href="login.html">Sign in</a></p>
+  </div>
+</div>
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('name').value,
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value
+  };
+  try {
+    const res = await fetch('https://edumind-n990.onrender.com/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    document.getElementById('alert').innerHTML = `<div class="alert error">${err.message}</div>`;
+  }
+});
+</script>
+</body>
+</html>

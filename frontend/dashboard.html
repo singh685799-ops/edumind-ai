@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard – EduMind AI</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="logo">⚡ EduMind</div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html" class="active">🏠 Home</a></li>
+      <li><a href="chat.html">💬 AI Chat</a></li>
+      <li><a href="billing.html">💳 Billing</a></li>
+      <li><a href="settings.html">⚙️ Settings</a></li>
+      <li><a href="#" onclick="logout()">🚪 Logout</a></li>
+    </ul>
+  </aside>
+  <main class="main-content">
+    <h1 class="page-title">Welcome back, <span id="userName">Student</span> 👋</h1>
+    <p class="page-subtitle">Here's an overview of your learning activity.</p>
+
+    <div class="stats-grid">
+      <div class="glass stat-card">
+        <div class="label">Current Plan</div>
+        <div class="value gradient" id="userPlan">Free</div>
+      </div>
+      <div class="glass stat-card">
+        <div class="label">Messages Used</div>
+        <div class="value" id="messagesUsed">0</div>
+      </div>
+      <div class="glass stat-card">
+        <div class="label">Payment Status</div>
+        <div class="value" id="paymentStatus" style="font-size:20px;">—</div>
+      </div>
+      <div class="glass stat-card">
+        <div class="label">Account Status</div>
+        <div class="value" style="font-size:20px;color:#34d399;">Active</div>
+      </div>
+    </div>
+
+    <div class="glass" style="padding:32px;">
+      <h3 style="margin-bottom:16px;">Quick Actions</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="chat.html"><button class="btn btn-primary">Start New Chat</button></a>
+        <a href="billing.html"><button class="btn btn-secondary">Upgrade Plan</button></a>
+      </div>
+    </div>
+
+    <div class="glass" style="padding:32px;margin-top:24px;">
+      <h3 style="margin-bottom:16px;">Tips for Best Results</h3>
+      <ul style="list-style:none;color:var(--text-dim);line-height:2;">
+        <li>📌 Be specific in your questions for accurate answers</li>
+        <li>📌 Upload clear images of textbook problems</li>
+        <li>📌 Specify your grade level when needed</li>
+        <li>📌 Ask follow-up questions to clarify concepts</li>
+      </ul>
+    </div>
+  </main>
+</div>
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+async function loadUser() {
+  const res = await fetch('https://edumind-n990.onrender.com/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) { logout(); return; }
+  const user = await res.json();
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userPlan').textContent = user.plan;
+  document.getElementById('messagesUsed').textContent = user.messagesUsed;
+  const status = user.paymentStatus || 'none';
+  document.getElementById('paymentStatus').innerHTML = `<span class="status ${status}">${status}</span>`;
+}
+function logout() { localStorage.clear(); location.href = 'login.html'; }
+loadUser();
+</script>
+</body>
+</html>

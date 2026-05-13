@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel – EduMind AI</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="logo">⚡ Admin</div>
+    <ul class="sidebar-menu">
+      <li><a href="admin.html" class="active">👥 Users</a></li>
+      <li><a href="#" onclick="logout()">🚪 Logout</a></li>
+    </ul>
+  </aside>
+  <main class="main-content">
+    <h1 class="page-title">User Management</h1>
+    <p class="page-subtitle">Approve or reject pending subscription payments.</p>
+    <div class="glass" style="padding:24px;overflow-x:auto;">
+      <table class="users-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Plan</th><th>Selected</th><th>Transaction ID</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="usersBody"><tr><td colspan="7" style="text-align:center;color:var(--text-dim);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token || !user.isAdmin) location.href = 'login.html';
+async function loadUsers() {
+  try {
+    const res = await fetch('https://edumind-n990.onrender.com/api/admin/users', { headers: { Authorization: `Bearer ${token}` } });
+    const users = await res.json();
+    const body = document.getElementById('usersBody');
+    if (!users.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;">No users yet</td></tr>'; return; }
+    body.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.name}</td>
+        <td>${u.email}</td>
+        <td>${u.plan}</td>
+        <td>${u.selectedPlan || '—'}</td>
+        <td>${u.transactionId || '—'}</td>
+        <td><span class="status ${u.paymentStatus || 'none'}">${u.paymentStatus || 'none'}</span></td>
+        <td>
+          ${u.paymentStatus === 'pending' ? `
+            <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;" onclick="approve('${u._id}')">Approve</button>
+            <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="reject('${u._id}')">Reject</button>
+          ` : '—'}
+        </td>
+      </tr>`).join('');
+  } catch (err) { console.error(err); }
+}
+async function approve(id) {
+  if (!confirm('Approve this payment and activate subscription?')) return;
+  await fetch(`/api/admin/approve/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  loadUsers();
+}
+async function reject(id) {
+  if (!confirm('Reject this payment request?')) return;
+  await fetch(`/api/admin/reject/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  loadUsers();
+}
+function logout() { localStorage.clear(); location.href = 'login.html'; }
+loadUsers();
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Chat – EduMind AI</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="logo">⚡ EduMind</div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">🏠 Home</a></li>
+      <li><a href="chat.html" class="active">💬 AI Chat</a></li>
+      <li><a href="billing.html">💳 Billing</a></li>
+      <li><a href="settings.html">⚙️ Settings</a></li>
+      <li><a href="#" onclick="logout()">🚪 Logout</a></li>
+    </ul>
+  </aside>
+  <main class="main-content" style="padding:0;">
+    <div class="chat-container">
+      <div class="chat-messages" id="messages">
+        <div class="message assistant">
+          👋 Hello! I'm your EduMind AI tutor. Ask me anything about Maths, Science, SST, English, Hindi or General Knowledge. You can also upload a photo of a question to get a detailed solution.
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <div id="imagePreviewContainer"></div>
+        <div class="chat-input-wrapper">
+          <input type="file" id="imageInput" accept="image/jpeg,image/png" style="display:none;">
+          <button class="icon-btn" onclick="document.getElementById('imageInput').click()" title="Upload image">📎</button>
+          <textarea id="messageInput" placeholder="Ask anything..." rows="1"></textarea>
+          <button class="send-btn" id="sendBtn">➤</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+let currentImage = null;
+let chatId = null;
+
+const messagesEl = document.getElementById('messages');
+const input = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const imageInput = document.getElementById('imageInput');
+const previewContainer = document.getElementById('imagePreviewContainer');
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+});
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+sendBtn.addEventListener('click', sendMessage);
+
+imageInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    currentImage = ev.target.result.split(',')[1];
+    previewContainer.innerHTML = `
+      <div class="image-preview">
+        <img src="${ev.target.result}">
+        <button onclick="clearImage()">✕</button>
+      </div>`;
+  };
+  reader.readAsDataURL(file);
+});
+function clearImage() { currentImage = null; previewContainer.innerHTML = ''; imageInput.value = ''; }
+
+function appendMessage(role, content, imageData = null) {
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  let html = '';
+  if (imageData) html += `<img src="data:image/jpeg;base64,${imageData}">`;
+  html += escapeHtml(content);
+  if (role === 'assistant') html += `<button class="copy-btn" onclick="copyText(this)">📋 Copy</button>`;
+  div.innerHTML = html;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function copyText(btn) {
+  const text = btn.parentElement.textContent.replace('📋 Copy','').trim();
+  navigator.clipboard.writeText(text);
+  btn.textContent = '✓ Copied';
+  setTimeout(() => btn.textContent = '📋 Copy', 2000);
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'typing-indicator';
+  div.id = 'typing';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function hideTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text && !currentImage) return;
+  appendMessage('user', text || '[Image question]', currentImage);
+  const sentImage = currentImage;
+  input.value = '';
+  input.style.height = 'auto';
+  clearImage();
+  showTyping();
+  sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('https://edumind-n990.onrender.com/api/chat/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ message: text || 'Please solve the question in this image.', image: sentImage, chatId })
+    });
+    const data = await res.json();
+    hideTyping();
+    if (!res.ok) throw new Error(data.error);
+    chatId = data.chatId;
+    appendMessage('assistant', data.response);
+  } catch (err) {
+    hideTyping();
+    appendMessage('assistant', '⚠️ ' + err.message);
+  }
+  sendBtn.disabled = false;
+}
+
+function logout() { localStorage.clear(); location.href = 'login.html'; }
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Billing – EduMind AI</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="logo">⚡ EduMind</div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">🏠 Home</a></li>
+      <li><a href="chat.html">💬 AI Chat</a></li>
+      <li><a href="billing.html" class="active">💳 Billing</a></li>
+      <li><a href="settings.html">⚙️ Settings</a></li>
+      <li><a href="#" onclick="logout()">🚪 Logout</a></li>
+    </ul>
+  </aside>
+  <main class="main-content">
+    <h1 class="page-title">Upgrade Your Plan</h1>
+    <p class="page-subtitle">Unlock unlimited AI tutoring and premium features.</p>
+
+    <div class="plans-grid">
+      <div class="glass plan-card">
+        <h3 class="plan-name">Free</h3>
+        <div class="plan-price">₹0<span>/month</span></div>
+        <ul class="plan-features">
+          <li>20 AI messages/month</li>
+          <li>Text & image questions</li>
+          <li>All subjects</li>
+          <li>Standard response time</li>
+        </ul>
+      </div>
+      <div class="glass plan-card featured">
+        <h3 class="plan-name">Pro</h3>
+        <div class="plan-price">₹199<span>/month</span></div>
+        <ul class="plan-features">
+          <li>Unlimited messages</li>
+          <li>Priority response speed</li>
+          <li>Image solving included</li>
+          <li>Chat history saved</li>
+          <li>Email support</li>
+        </ul>
+        <button class="btn btn-primary btn-block" onclick="selectPlan('Pro', 199)">Choose Pro</button>
+      </div>
+      <div class="glass plan-card">
+        <h3 class="plan-name">Premium</h3>
+        <div class="plan-price">₹499<span>/month</span></div>
+        <ul class="plan-features">
+          <li>Everything in Pro</li>
+          <li>Advanced AI model</li>
+          <li>Voice support</li>
+          <li>Priority support 24/7</li>
+          <li>Early feature access</li>
+        </ul>
+        <button class="btn btn-primary btn-block" onclick="selectPlan('Premium', 499)">Choose Premium</button>
+      </div>
+    </div>
+
+    <div id="paymentSection" style="display:none;">
+      <div class="glass upi-box">
+        <h2>Complete Your Payment</h2>
+        <p style="color:var(--text-dim);margin:12px 0;">Selected Plan: <strong id="selectedPlanName"></strong> – <strong>₹<span id="selectedAmount"></span></strong></p>
+        <p>Pay using any UPI app to:</p>
+        <div class="upi-id">9113765915@fam</div>
+        <img class="qr-image" id="qrImage" src="" alt="UPI QR Code">
+        <p style="color:var(--text-dim);font-size:14px;">Scan QR with any UPI app or pay manually using the ID above.</p>
+
+        <div class="input-group" style="margin-top:24px;text-align:left;">
+          <label>Transaction ID / Reference Number</label>
+          <input type="text" id="transactionId" placeholder="e.g. T2401XX12345">
+        </div>
+
+        <div id="payAlert"></div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px;">
+          <button class="btn btn-primary" onclick="markPaid()">✅ I Have Paid</button>
+          <button class="btn btn-secondary" onclick="sendWhatsApp()">💬 Send WhatsApp Confirmation</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+let user = JSON.parse(localStorage.getItem('user') || '{}');
+let selectedPlan = null;
+let selectedAmount = 0;
+
+// Generate QR pointing to UPI ID using free API
+const upiId = '9113765915@fam';
+function setQR(amount, plan) {
+  const upiLink = `upi://pay?pa=${upiId}&pn=EduMind%20AI&am=${amount}&cu=INR&tn=${encodeURIComponent(plan + ' Plan')}`;
+  document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiLink)}`;
+}
+
+function selectPlan(plan, amount) {
+  selectedPlan = plan;
+  selectedAmount = amount;
+  document.getElementById('selectedPlanName').textContent = plan;
+  document.getElementById('selectedAmount').textContent = amount;
+  setQR(amount, plan);
+  document.getElementById('paymentSection').style.display = 'block';
+  window.scrollTo({ top: document.getElementById('paymentSection').offsetTop - 80, behavior: 'smooth' });
+}
+
+async function markPaid() {
+  const txId = document.getElementById('transactionId').value.trim();
+  if (!txId) {
+    document.getElementById('payAlert').innerHTML = `<div class="alert error">Please enter your transaction ID first.</div>`;
+    return;
+  }
+  try {
+    const res = await fetch('https://edumind-n990.onrender.com/api/payment/mark-paid', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan: selectedPlan, transactionId: txId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('payAlert').innerHTML = `<div class="alert success">✅ Payment marked as pending. Our team will verify within 24 hours.</div>`;
+  } catch (err) {
+    document.getElementById('payAlert').innerHTML = `<div class="alert error">${err.message}</div>`;
+  }
+}
+
+function sendWhatsApp() {
+  const txId = document.getElementById('transactionId').value.trim() || 'Not provided';
+  const msg = `Hello, I have completed the payment for subscription.\n\nName: ${user.name}\nEmail: ${user.email}\nPlan: ${selectedPlan}\nTransaction ID: ${txId}\n\nPlease verify and activate my subscription.`;
+  window.open(`https://wa.me/9113765915?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function logout() { localStorage.clear(); location.href = 'login.html'; }
+</script>
+</body>
+</html>

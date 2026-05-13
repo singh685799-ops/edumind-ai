@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign In – EduMind AI</title>
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="auth-container">
+  <div class="glass auth-box">
+    <div class="logo" style="margin-bottom:24px;">⚡ EduMind AI</div>
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to continue your learning journey.</p>
+    <div id="alert"></div>
+    <form id="loginForm">
+      <div class="input-group">
+        <label>Email Address</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+    </form>
+    <p class="auth-link">New here? <a href="signup.html">Create an account</a></p>
+  </div>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = {
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value
+  };
+  try {
+    const res = await fetch('https://edumind-n990.onrender.com/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    window.location.href = result.user.isAdmin ? 'admin.html' : 'dashboard.html';
+  } catch (err) {
+    document.getElementById('alert').innerHTML = `<div class="alert error">${err.message}</div>`;
+  }
+});
+</script>
+</body>
+</html>
